@@ -1,6 +1,8 @@
 ﻿using Experiments.Core.AuthAggregate;
 using Experiments.Core.ContributorAggregate;
 using Experiments.Core.SessionAggregate;
+using Experiments.Infrastructure.Chat;
+using Experiments.Infrastructure.Identity.Jwt.Models;
 using Experiments.Infrastructure.Identity.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
@@ -14,17 +16,14 @@ public class AppDbContext(
   public DbSet<AuthConfirmation> AuthConfirmations => Set<AuthConfirmation>();
   public DbSet<Session> Sessions => Set<Session>();
   public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+  public DbSet<ChatRoom> ChatRooms => Set<ChatRoom>();
+  public DbSet<Message> Messages => Set<Message>();
+  public DbSet<UserChat> UserChats => Set<UserChat>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
     base.OnModelCreating(modelBuilder);
     modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
-
-    modelBuilder.Entity<RefreshToken>()
-      .HasOne(x => x.Session)
-      .WithOne(x => x.refreshToken)
-      .HasForeignKey<Session>(x => x.refreshTokenId)
-      .IsRequired();
   }
 
   public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new())

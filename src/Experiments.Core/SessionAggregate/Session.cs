@@ -2,8 +2,6 @@
 
 public class Session : EntityBase<Guid>, IAggregateRoot
 {
-  public Guid refreshTokenId { get; set; }
-  public RefreshToken refreshToken { get; set; } = default!;
   public SessionPlatform Platform { get; set; }
   public DateTimeOffset CreatedAt { get; set; }
 }

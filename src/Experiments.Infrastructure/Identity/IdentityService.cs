@@ -1,7 +1,9 @@
 ﻿using Ardalis.Result;
 using Experiments.Core.IdentityAggregate;
 using Experiments.Core.Interfaces;
+using Experiments.Infrastructure.Data;
 using Experiments.Infrastructure.Identity.Jwt;
+using Experiments.Infrastructure.Identity.Jwt.Models;
 using Experiments.Infrastructure.Identity.Models;
 using Microsoft.AspNetCore.Identity;
 
@@ -9,8 +11,44 @@ namespace Experiments.Infrastructure.Identity;
 
 public class IdentityService(
   UserManager<AppUser> userManager,
-  IJwtService jwtService) : IIdentityService
+  IJwtService jwtService,
+  AppDbContext db,
+  IRepository<RefreshToken> repository) : IIdentityService
 {
+  public async Task<Result<Core.IdentityAggregate.Jwt>> RefreshTokenAsync(string refreshToken)
+  {
+    var token = db.RefreshTokens.SingleOrDefault(t => t.Token == refreshToken);
+
+    if (token == null)
+    {
+      return Result.NotFound();
+    }
+
+    if (token.IsRevoked)
+    {
+      return Result.Forbidden();
+    }
+
+    token.SetRevoked();
+
+    await repository.UpdateAsync(token);
+
+    var user = await userManager.FindByIdAsync(token.UserId.ToString());
+
+    var newToken = await jwtService.GenerateJwtAsync(user!);
+    var newRefreshToken = jwtService.GenerateRefreshTokenAsync(user!);
+
+    await repository.AddAsync(newRefreshToken);
+
+    return Result.Success(new Core.IdentityAggregate.Jwt
+    {
+      AccessToken = newToken.token,
+      RefreshToken = newRefreshToken.Token,
+      AccessTokenExpiry = newToken.expires,
+      RefreshTokenExpiry = newRefreshToken.Expires
+    });
+  }
+
   public async Task<Result> SetUserNameAsync(int userId, string userName)
   {
     var user = await userManager.FindByIdAsync(userId.ToString());
@@ -42,7 +80,7 @@ public class IdentityService(
     });
   }
 
-  public async Task<Result<(Core.IdentityAggregate.Jwt, JwtRefreshToken)>> SignInOrSignUpAsync(string phoneNumber)
+  public async Task<Result<Core.IdentityAggregate.Jwt>> SignInOrSignUpAsync(string phoneNumber)
   {
     var containsUser = await userManager.Users.AnyAsync(x => x.PhoneNumber == phoneNumber);
 
@@ -69,8 +107,17 @@ public class IdentityService(
       return Result.Error();
     }
 
-    var tokens = await jwtService.GenerateJwtAsync(user);
+    var token = await jwtService.GenerateJwtAsync(user);
+    var refreshToken = jwtService.GenerateRefreshTokenAsync(user);
 
-    return Result.Success(tokens);
+    await repository.AddAsync(refreshToken);
+
+    return Result.Success(new Core.IdentityAggregate.Jwt
+    {
+      AccessToken = token.token,
+      RefreshToken = refreshToken.Token,
+      AccessTokenExpiry = token.expires,
+      RefreshTokenExpiry = refreshToken.Expires
+    });
   }
 }

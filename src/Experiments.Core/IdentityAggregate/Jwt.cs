@@ -3,5 +3,7 @@
 public class Jwt
 {
   public string AccessToken { get; set; } = string.Empty;
-  public DateTimeOffset AccessTokenExpiry { get; set; }
+  public string RefreshToken { get; set; } = string.Empty;
+  public DateTime AccessTokenExpiry { get; set; }
+  public DateTime RefreshTokenExpiry { get; set; }
 }

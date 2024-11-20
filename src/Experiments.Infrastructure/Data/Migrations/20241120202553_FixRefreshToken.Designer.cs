@@ -3,6 +3,7 @@ using System;
 using Experiments.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Experiments.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241120202553_FixRefreshToken")]
+    partial class FixRefreshToken
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -84,69 +87,6 @@ namespace Experiments.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Sessions");
-                });
-
-            modelBuilder.Entity("Experiments.Infrastructure.Chat.ChatRoom", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsGroup")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ChatRooms");
-                });
-
-            modelBuilder.Entity("Experiments.Infrastructure.Chat.Message", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ChatId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("SenderId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Text")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ChatId");
-
-                    b.HasIndex("SenderId");
-
-                    b.ToTable("Messages");
-                });
-
-            modelBuilder.Entity("Experiments.Infrastructure.Chat.UserChat", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("ChatId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("UserId", "ChatId");
-
-                    b.HasIndex("ChatId");
-
-                    b.ToTable("UserChats");
                 });
 
             modelBuilder.Entity("Experiments.Infrastructure.Identity.Jwt.Models.RefreshToken", b =>
@@ -409,44 +349,6 @@ namespace Experiments.Infrastructure.Data.Migrations
                     b.Navigation("PhoneNumber");
                 });
 
-            modelBuilder.Entity("Experiments.Infrastructure.Chat.Message", b =>
-                {
-                    b.HasOne("Experiments.Infrastructure.Chat.ChatRoom", "Chat")
-                        .WithMany("Messages")
-                        .HasForeignKey("ChatId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Experiments.Infrastructure.Identity.Models.AppUser", "Sender")
-                        .WithMany("Messages")
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Chat");
-
-                    b.Navigation("Sender");
-                });
-
-            modelBuilder.Entity("Experiments.Infrastructure.Chat.UserChat", b =>
-                {
-                    b.HasOne("Experiments.Infrastructure.Chat.ChatRoom", "Chat")
-                        .WithMany("Participants")
-                        .HasForeignKey("ChatId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Experiments.Infrastructure.Identity.Models.AppUser", "User")
-                        .WithMany("UserChats")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Chat");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Experiments.Infrastructure.Identity.Jwt.Models.RefreshToken", b =>
                 {
                     b.HasOne("Experiments.Infrastructure.Identity.Models.AppUser", "User")
@@ -509,20 +411,9 @@ namespace Experiments.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Experiments.Infrastructure.Chat.ChatRoom", b =>
-                {
-                    b.Navigation("Messages");
-
-                    b.Navigation("Participants");
-                });
-
             modelBuilder.Entity("Experiments.Infrastructure.Identity.Models.AppUser", b =>
                 {
-                    b.Navigation("Messages");
-
                     b.Navigation("RefreshTokens");
-
-                    b.Navigation("UserChats");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,14 +1,12 @@
 ﻿using Experiments.Core.AuthAggregate;
 using Experiments.Core.AuthAggregate.Specifications;
 using Experiments.Core.Interfaces;
-using Experiments.Core.SessionAggregate;
 
 namespace Experiments.UseCases.Auth.Confirm;
 
 public class AuthConfirmCommandHandler(
   IRepository<AuthConfirmation> repository,
-  IIdentityService identityService,
-  IRepository<Core.SessionAggregate.RefreshToken> refreshTokenRepository
+  IIdentityService identityService
 )
   : ICommandHandler<AuthConfirmCommand, Result<JwtDto>>
 {
@@ -42,21 +40,12 @@ public class AuthConfirmCommandHandler(
     confirmation.SetConfirmed();
     await repository.UpdateAsync(confirmation, cancellationToken);
 
-    var refreshToken = new Core.SessionAggregate.RefreshToken
-    {
-      Id = tokensResult.Value.Item2.Id,
-      Session = new Session { Platform = confirmation.Platform.ToSessionPlatform(), CreatedAt = DateTime.UtcNow },
-      UserId = tokensResult.Value.Item2.UserId
-    };
-
-    await refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
-
     return Result.Success(new JwtDto
     {
-      AccessToken = tokensResult.Value.Item1.AccessToken,
-      RefreshToken = tokensResult.Value.Item2.Token,
-      AccessTokenExpiry = tokensResult.Value.Item1.AccessTokenExpiry,
-      RefreshTokenExpiry = tokensResult.Value.Item2.Expires
+      AccessToken = tokensResult.Value.AccessToken,
+      RefreshToken = tokensResult.Value.RefreshToken,
+      AccessTokenExpiry = tokensResult.Value.AccessTokenExpiry,
+      RefreshTokenExpiry = tokensResult.Value.RefreshTokenExpiry
     });
   }
 }
